@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wireframe Portal Bantuan (Simulasi Edukasi)</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --wireframe-border: #999999;
+            --wireframe-box: #e0e0e0;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Container Wireframe Utama */
+        .wireframe-card {
+            background: #ffffff;
+            border: 2px dashed var(--wireframe-border);
+            padding: 30px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .placeholder-logo {
+            width: 60px;
+            height: 60px;
+            background-color: var(--wireframe-box);
+            border: 1px solid var(--wireframe-border);
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .wireframe-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .wireframe-subtitle {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid var(--wireframe-border);
+            background-color: #fafafa;
+            font-family: inherit;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background-color: #333333;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        /* Overlay Fullscreen */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        /* Box Gambar Memantul (DVD Style) */
+        .alert-box {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .alert-box img {
+            max-width: 240px;
+            max-height: 40vh;
+            border-radius: 8px;
+            box-shadow: 0 0 25px rgba(255, 0, 0, 0.8);
+            pointer-events: none; /* Supaya klik ditangkap penuh oleh .alert-box */
+        }
+
+        /* Petunjuk di Atas Layar */
+        .close-hint {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffffff;
+            font-size: 13px;
+            background: rgba(0,0,0,0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid #555;
+            pointer-events: none;
+            z-index: 2000;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="wireframe-card">
+    <div class="placeholder-logo">[ LOGO ]</div>
+    <div class="wireframe-title">Portal Bantuan CS</div>
+    <div class="wireframe-subtitle">Masukkan akun untuk memulai sesi chat</div>
+
+    <form id="demoForm">
+        <div class="form-group">
+            <label for="userID">ID Pengguna / Email</label>
+            <input type="text" id="userID" placeholder="Contoh: user123" required>
+        </div>
+        <div class="form-group">
+            <label for="userPass">Kata Sandi / PIN</label>
+            <input type="password" id="userPass" placeholder="******" required>
+        </div>
+        <button type="submit" class="btn-submit">HUBUNGKAN SEKARANG</button>
+    </form>
+</div>
+
+<!-- Div Overlay Peringatan -->
+<div id="alertOverlay" class="overlay" onclick="spawnBox(boxData.posX, boxData.posY)">
+    <div class="close-hint">💡 Klik GAMBAR untuk menambah jumlahnya! | Klik AREA HITAM untuk menutup</div>
+</div>
+
+<!-- Audio Loop -->
+<audio id="alertAudio" preload="auto" loop></audio>
+
+<script>
+    // --- GANTI PATH GAMBAR DAN AUDIO DI SINI ---
+    const gambar1 = 'blacck.png';
+    const gambar2 = 'whitte.png';
+    const audioPath = 'uranidiot.mp3';
+
+    const demoForm = document.getElementById('demoForm');
+    const alertOverlay = document.getElementById('alertOverlay');
+    const alertAudio = document.getElementById('alertAudio');
+
+    alertAudio.src = audioPath;
+
+    let boxes = []; // Mengampung semua elemen gambar yang sedang aktif
+    let imageInterval = null;
+    let animFrameId = null;
+    let isGambar1 = true;
+
+    // Fungsi membuat / memunculkan gambar baru (spawn)
+    function spawnBox(startX, startY) {
+        const boxDiv = document.createElement('div');
+        boxDiv.className = 'alert-box';
+
+        const imgEl = document.createElement('img');
+        imgEl.src = isGambar1 ? gambar1 : gambar2;
+        boxDiv.appendChild(imgEl);
+
+        alertOverlay.appendChild(boxDiv);
+
+        // Posisi awal
+        let posX = startX !== undefined ? startX : Math.random() * (window.innerWidth - 260);
+        let posY = startY !== undefined ? startY : Math.random() * (window.innerHeight - 200);
+
+        // Kecepatan dan arah acak (antara 10 sampai 18)
+        let speedX = 3;
+        let speedY = 3;
+
+        const boxData = {
+            element: boxDiv,
+            imgElement: imgEl,
+            posX: posX,
+            posY: posY,
+            velX: speedX,
+            velY: speedY
+        };
+
+        // EVENT KLIK PADA GAMBAR: Duplikasi gambar saat diklik
+        boxDiv.addEventListener('click', function(e) {
+            e.stopPropagation(); // Mencegah klik tembus ke overlay (agar tidak menutup)
+            spawnBox(boxData.posX, boxData.posY); // Spawn gambar baru dari posisi yang sama
+        });
+
+        boxes.push(boxData);
+    }
+
+    // Loop Animasi Pergerakan Semua Gambar
+    function moveDVD() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+
+        boxes.forEach(box => {
+            const boxRect = box.element.getBoundingClientRect();
+
+            box.posX += box.velX;
+            box.posY += box.velY;
+
+            // Pantulan Kanan / Kiri
+            if (box.posX + boxRect.width >= screenWidth) {
+                box.posX = screenWidth - boxRect.width;
+                box.velX = -box.velX;
+            } else if (box.posX <= 0) {
+                box.posX = 0;
+                box.velX = -box.velX;
+            }
+
+            // Pantulan Bawah / Atas
+            if (box.posY + boxRect.height >= screenHeight) {
+                box.posY = screenHeight - boxRect.height;
+                box.velY = -box.velY;
+            } else if (box.posY <= 0) {
+                box.posY = 0;
+                box.velY = -box.velY;
+            }
+
+            // Terapkan Posisi
+            box.element.style.left = box.posX + 'px';
+            box.element.style.top = box.posY + 'px';
+        });
+
+        animFrameId = requestAnimationFrame(moveDVD);
+    }
+
+    // Submit Form Event Listener
+    demoForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Bersihkan gambar lama jika ada
+        removeAllBoxes();
+
+        // Tampilkan Overlay
+        alertOverlay.style.display = 'block';
+
+        // Spawn gambar pertama
+        spawnBox();
+
+        // Jalankan Loop Animasi Moving
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        animFrameId = requestAnimationFrame(moveDVD);
+
+        // Toggle Gambar Tiap 1 Detik untuk Semua Elemen
+        if (imageInterval) clearInterval(imageInterval);
+        imageInterval = setInterval(() => {
+            isGambar1 = !isGambar1;
+            boxes.forEach(box => {
+                box.imgElement.src = isGambar1 ? gambar1 : gambar2;
+            });
+        }, 1000);
+
+        // Putar Audio
+        alertAudio.currentTime = 0;
+        alertAudio.play().catch(err => console.log("Audio diblokir browser:", err));
+    });
+
+    // Menghapus semua elemen gambar dari DOM & Array
+    function removeAllBoxes() {
+        boxes.forEach(box => box.element.remove());
+        boxes = [];
+    }
+</script>
+
+</body>
+</html>
